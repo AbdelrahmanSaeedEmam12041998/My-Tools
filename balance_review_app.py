@@ -7,21 +7,36 @@ import io
 
 # Page Configuration
 st.set_page_config(
-    page_title="Dispute Unit Tools",
+    page_title="Dispute App",
     page_icon="damen_logo.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS - استايل ضامن وتنسيق العناصر
 st.markdown("""
     <style>
         .main { background-color: #f8fafc; }
-        [data-testid="stSidebar"] { background-color: #0f172a; direction: ltr; text-align: center; }
+        [data-testid="stSidebar"] { 
+            background-color: #00205B; 
+            border-right: 3px solid #F97316;
+            direction: ltr; 
+            text-align: center; 
+        }
         [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] div { color: #ffffff !important; font-weight: 600 !important; }
-        .stButton>button { width: 100%; border-radius: 8px; font-weight: bold; height: 48px; background-color: #f97316; color: white; border: none; }
-        div.stMetric { background-color: #ffffff; padding: 20px; border-radius: 12px; border-left: 6px solid #f97316; direction: rtl; text-align: right; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        h1, h2, h3 { color: #1e293b; direction: rtl; text-align: right; }
+        .stButton>button { width: 100%; border-radius: 8px; font-weight: bold; height: 48px; background-color: #F97316 !important; color: white !important; border: none; }
+        .stButton>button:hover { background-color: #ea580c !important; }
+        div.stMetric { background-color: #ffffff; padding: 20px; border-radius: 12px; border-left: 6px solid #F97316; direction: rtl; text-align: right; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        h1, h2, h3 { color: #00205B; direction: rtl; text-align: right; }
+        .circle-img { 
+            border-radius: 50%; 
+            border: 3px solid #F97316; 
+            width: 90px; 
+            height: 90px; 
+            object-fit: cover; 
+            display: block; 
+            margin: 10px auto; 
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -39,10 +54,15 @@ USERS = {
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "username" not in st.session_state: st.session_state.username = ""
 
+# Login Page
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
-        st.markdown("<h2 style='text-align: center;'>🛡️ تسجيل الدخول</h2>", unsafe_allow_html=True)
+        if os.path.exists("damen_logo.png"):
+            st.image("damen_logo.png", width=140)
+        st.markdown("<h1 style='text-align: center; color: #F97316;'>Dispute App</h1>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center; font-size: 18px;'>تسجيل الدخول</h3>", unsafe_allow_html=True)
+        
         login_user = st.text_input("البريد الإلكتروني")
         login_pass = st.text_input("كلمة المرور", type="password")
         if st.button("دخول"):
@@ -53,15 +73,31 @@ if not st.session_state.logged_in:
             else: st.error("بيانات الدخول غير صحيحة")
     st.stop()
 
+# Sidebar
 current_user = USERS[st.session_state.username]
 with st.sidebar:
-    st.markdown(f"<p style='text-align: center; color: #38bdf8; font-size: 16px; margin-top: 10px;'>{current_user['name']}</p>", unsafe_allow_html=True)
+    # عرض الصورة دائرية وفي المنتصف
+    img_path = current_user["img"]
+    if os.path.exists(img_path):
+        with open(img_path, "rb") as img_file:
+            img_bytes = img_file.read()
+        import base64
+        encoded_img = base64.b64encode(img_bytes).decode()
+        st.markdown(f'<img src="data:image/png;base64,{encoded_img}" class="circle-img">', unsafe_allow_html=True)
+    else:
+        if os.path.exists("damen_logo.png"):
+            st.image("damen_logo.png", width=80)
+            
+    st.markdown(f"<p style='text-align: center; color: #ffffff; font-size: 16px; margin-top: 5px;'>{current_user['name']}</p>", unsafe_allow_html=True)
+    
     if st.button("تسجيل الخروج"):
         st.session_state.logged_in = False
         st.rerun()
+        
     st.markdown("---")
     selected_tool = st.radio("الأدوات:", ["📊 Balance Review", "🔍 Etisalat Checker", "⚡ Dispute Extractor"], label_visibility="collapsed")
 
+# Tools Logic
 if selected_tool == "📊 Balance Review":
     st.title("📊 مراجعة أرصدة التجار")
     col_input, col_results = st.columns([1, 1], gap="large")
@@ -111,11 +147,10 @@ elif selected_tool == "⚡ Dispute Extractor":
             service_name = str(row.get("اسم_الخدمة", "")).strip()
             base_provider = str(row.get("مزود_الخدمة_الاساسي", "")).strip()
             
-            # Logic for amount
             if "ADSL" in service_name.upper() and base_provider == "Bee Payment":
                 amount = row.get("القيمه_الاساسية", 0)
             else:
-                amount = row.get("القيمه_الكليه", 0)
+                amount = row.get("القيمه_كليه", 0)
 
             row_dict = {
                 "operation number": row.get("رقم_العملية"),
@@ -132,11 +167,9 @@ elif selected_tool == "⚡ Dispute Extractor":
         result_df = pd.DataFrame(processed_data)
         st.dataframe(result_df)
         
-        # Download & Copy
         output = io.BytesIO()
         result_df.to_excel(output, index=False)
         st.download_button("📥 تحميل التقرير", output.getvalue(), f"{extraction_type}_Report.xlsx")
         
-        # Copy logic (excluding Status)
         cols_to_copy = [c for c in result_df.columns if c != "Status"]
         st.code(result_df[cols_to_copy].to_csv(sep='\t', index=False, header=False), language="text")
