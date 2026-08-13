@@ -36,11 +36,9 @@ USERS = {
     "mohamed.yahia@Damen.com.eg": {"password": "%'Pnw[15T[8\"1", "name": "محمد يحيى", "img": "mohamed.yahia@Damen.com.eg.png"}
 }
 
-# Session State
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "username" not in st.session_state: st.session_state.username = ""
 
-# ==================== LOGIN ====================
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
@@ -55,215 +53,90 @@ if not st.session_state.logged_in:
             else: st.error("بيانات الدخول غير صحيحة")
     st.stop()
 
-# ==================== SIDEBAR ====================
 current_user = USERS[st.session_state.username]
 with st.sidebar:
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        img_to_show = current_user["img"] if os.path.exists(current_user["img"]) else "damen_logo.png"
-        try:
-            image = Image.open(img_to_show)
-            st.image(image, use_container_width=True)
-        except:
-            st.write("👤")
-            
     st.markdown(f"<p style='text-align: center; color: #38bdf8; font-size: 16px; margin-top: 10px;'>{current_user['name']}</p>", unsafe_allow_html=True)
-    
     if st.button("تسجيل الخروج"):
         st.session_state.logged_in = False
         st.rerun()
-        
     st.markdown("---")
     selected_tool = st.radio("الأدوات:", ["📊 Balance Review", "🔍 Etisalat Checker", "⚡ Dispute Extractor"], label_visibility="collapsed")
 
-# ==================== TOOLS (Logic) ====================
 if selected_tool == "📊 Balance Review":
-    st.title("📊 مراجعة أرصدة التجار (Balance Review)")
-    st.markdown("<p style='direction: rtl; text-align: right; color: #64748b;'>أداة متطورة لمطابقة تقارير الحسابات اليومية واستخراج الـ Variance بدقة متناهية.</p>", unsafe_allow_html=True)
-    st.markdown("---")
-
+    st.title("📊 مراجعة أرصدة التجار")
     col_input, col_results = st.columns([1, 1], gap="large")
-
     with col_input:
-        st.markdown("<h3 style='direction: rtl; text-align: right;'>📥 مدخلات التقرير</h3>", unsafe_allow_html=True)
-        input_text = st.text_area("ألصق نص التقرير هنا (Paste Report):", height=300, placeholder="قم بنسخ بيانات التقرير من النظام وألصقها هنا مباشرة...")
+        input_text = st.text_area("ألصق نص التقرير هنا:", height=300)
         calculate_btn = st.button("حساب ومراجعة الرصيد الآن", type="primary")
-
     with col_results:
-        st.markdown("<h3 style='direction: rtl; text-align: right;'>📈 النتائج والتحليل المالي</h3>", unsafe_allow_html=True)
-        
         if calculate_btn:
-            if not input_text.strip():
-                st.warning("⚠️ من فضلك ألصق التقرير في المربع المخصص أولاً.")
+            def parse_report_data(text):
+                mapping = {"الرصيد الافتتاحي": "C5", "اضافة رصيد": "C6", "استرجاع رصيد": "C7", "استرحاع رصيد": "C7", 
+                           "اضافة عمولات": "C8", "تصحيح بالاضافة": "C9", "تصحيح بالخصم": "C10", "مدفوعات العملاء": "C11",
+                           "الرصيد الختامي": "C12", "مبالغ تحت التسوية": "C13", "مدفوعات كارت الائتمان": "C14", 
+                           "اضافة جوائز": "C15", "غرامات عدم التحقيق": "C16", "مصاريف صيانة": "C17", 
+                           "ايداع اسمارت": "C18", "سحب علي المكشوف": "C19"}
+                results = {v: 0.0 for v in mapping.values()}
+                for arabic_label, key in mapping.items():
+                    match = re.search(re.escape(str(arabic_label)) + r"\s*:\s*\n?\s*(-?[\d\.]+)", text)
+                    if match: results[key] = float(match.group(1))
+                return results
+
+            data = parse_report_data(input_text)
+            expected = round(data['C5'] + data['C6'] + data['C8'] + data['C9'] + data['C7'] + data['C15'] + data['C13'] - data['C10'] - data['C11'] + data['C19'] + data['C17'], 2)
+            closing = round(data['C12'], 2)
+            variance = round(closing - expected, 2)
+            overdraft = round(data['C19'], 2)
+
+            st.metric("الرصيد المتوقع", f"{expected:,.2f}")
+            st.metric("الرصيد الختامي", f"{closing:,.2f}")
+            st.metric("الفرق النهائي", f"{variance:,.2f}")
+
+            if variance == 0:
+                st.success("✅ المطابقة صحيحة تماماً!")
+            elif abs(variance) > 0 and overdraft > 0 and abs(variance) == abs(overdraft):
+                st.success(f"✅ مفيش فرق حقيقي! بسبب سحب على المكشوف ({overdraft:,.2f}).")
             else:
-                def parse_report_data(text):
-                    mapping = {
-                        "الرصيد الافتتاحي": ("C5", "الرصيد الافتتاحي"),
-                        "اضافة رصيد": ("C6", "إضافة رصيد"),
-                        "استرجاع رصيد": ("C7", "استرجاع رصيد"),
-                        "استرحاع رصيد": ("C7", "استرجاع رصيد"),
-                        "اضافة عمولات": ("C8", "إضافة عمولات"),
-                        "تصحيح بالاضافة": ("C9", "تصحيح بالإضافة"),
-                        "تصحيح بالخصم": ("C10", "تصحيح بالخصم"),
-                        "مدفوعات العملاء": ("C11", "مدفوعات العملاء"),
-                        "الرصيد الختامي": ("C12", "الرصيد الختامي"),
-                        "مبالغ تحت التسوية": ("C13", "مبالغ تحت التسوية"),
-                        "مدفوعات كارت الائتمان": ("C14", "مدفوعات كارت الائتمان"),
-                        "اضافة جوائز": ("C15", "إضافة جوائز"),
-                        "غرامات عدم التحقيق": ("C16", "غرامات عدم التحقيق"),
-                        "مصاريف صيانة": ("C17", "مصاريف صيانة"),
-                        "ايداع اسمارت": ("C18", "إيداع اسمارت"),
-                        "سحب علي المكشوف": ("C19", "سحب على المكشوف")
-                    }
-                    results = {}
-                    raw_data = {}
-                    for arabic_label, (key, label_name) in mapping.items():
-                        pattern = re.escape(str(arabic_label)) + r"\s*:\s*\n?\s*(-?[\d\.]+)"
-                        match = re.search(pattern, text)
-                        if match:
-                            try:
-                                val = float(match.group(1))
-                                results[key] = val
-                                raw_data[label_name] = val
-                            except ValueError:
-                                pass
-                        if key not in results:
-                            results[key] = 0.0
-                    return results, raw_data
-
-                data, raw_data = parse_report_data(input_text)
-                
-                expected = (
-                    data.get('C5', 0) + data.get('C6', 0) + data.get('C8', 0) + data.get('C9', 0) + 
-                    data.get('C7', 0) + data.get('C15', 0) + data.get('C13', 0) - data.get('C10', 0) - 
-                    data.get('C11', 0) + data.get('C19', 0) + data.get('C17', 0)
-                )
-                closing = data.get('C12', 0)
-                variance = closing - expected
-                overdraft = data.get('C19', 0)
-
-                st.metric("الرصيد المتوقع (Expected Balance)", f"{expected:,.2f}")
-                st.metric("الرصيد الختامي (Closing Balance)", f"{closing:,.2f}")
-                st.metric("الفرق النهائي (Variance)", f"{variance:,.2f}")
-
-                if abs(variance) > 0 and overdraft > 0 and abs(round(variance, 2)) == abs(round(overdraft, 2)):
-                    st.success(f"✅ مفيش فرق حقيقي! الفرق ده بسبب إن التاجر سحب على المكشوف بقيمة ({overdraft:,.2f}) وهوا نفس مبلغ الفرق بالضبط.")
-                elif abs(variance) == 0:
-                    st.success("✅ المطابقة صحيحة تماماً ومفيش أي فروق!")
-                else:
-                    st.warning("⚠️ توجد فروق تتطلب المراجعة الفنية.")
-
-                with st.expander("🔍 عرض تفاصيل بنود التقرير المستخرجة"):
-                    for label, val in raw_data.items():
-                        st.text(f"• {label} : {val}")
-        else:
-            st.info("👈 قم بلصق التقرير في المربع الجانبي ثم اضغط على زر الحساب لعرض النتائج هنا.")
-
-elif selected_tool == "🔍 Etisalat Checker":
-    st.title("🔍 Etisalat Transaction Checker")
-    st.info("أداة مخصصة لفحص ومطابقة معاملات اتصالات قريباً...")
+                st.warning("⚠️ توجد فروق تتطلب المراجعة.")
 
 elif selected_tool == "⚡ Dispute Extractor":
     st.title("⚡ Dispute Extractor")
-    st.markdown("<p style='direction: rtl; text-align: right; color: #64748b;'>أداة معالجة واستخراج تقارير الشكاوى (Complaint) والمطابقات (Reconciliation) تلقائياً.</p>", unsafe_allow_html=True)
-    st.markdown("---")
-
     uploaded_file = st.file_uploader("اختر ملف الـ Excel:", type=["xlsx", "xls"])
-    
-    extraction_type = st.radio("اختر نوع التقرير المطلوب استخراجه:", ["Complaint", "Reconciliation"], horizontal=True)
+    extraction_type = st.radio("النوع:", ["Complaint", "Reconciliation"], horizontal=True)
 
-    if uploaded_file is not None:
-        try:
-            df_dump = pd.read_excel(uploaded_file, sheet_name=0)
+    if uploaded_file and st.button("بدء المعالجة", type="primary"):
+        df_dump = pd.read_excel(uploaded_file, sheet_name=0)
+        processed_data = []
+        for _, row in df_dump.iterrows():
+            service_name = str(row.get("اسم_الخدمة", "")).strip()
+            base_provider = str(row.get("مزود_الخدمة_الاساسي", "")).strip()
             
-            if st.button("بدء المعالجة والاستخراج", type="primary"):
-                processed_data = []
-                
-                for idx, row in df_dump.iterrows():
-                    def get_val(col_name):
-                        if col_name in df_dump.columns:
-                            val = row[col_name]
-                            return "" if pd.isna(val) else str(val).strip()
-                        return ""
+            # Logic for amount
+            if "ADSL" in service_name.upper() and base_provider == "Bee Payment":
+                amount = row.get("القيمه_الاساسية", 0)
+            else:
+                amount = row.get("القيمه_الكليه", 0)
 
-                    extra_info = get_val("معلومات_اضافيه")
-                    ref_num = get_val("الرقم_المرجعي")
-                    trx_date = get_val("تاريخ_الانشاء")
-                    service_name = get_val("اسم_الخدمة")
-                    op_num = get_val("رقم_العملية")
-                    merchant_code = get_val("كود_التاجر")
-                    merchant_name = get_val("اسم_التاجر")
-                    gov_name = get_val("اسم_المحافظه")
-                    status_val = get_val("حالة_العملية")
-                    provider_name = get_val("مزود_الخدمة")
-                    
-                    # المنطق المحدث للـ Amount
-                    base_provider = get_val("مزود_الخدمة_الاساسي")
-                    val_basic = row["القيمه_الاساسية"] if "القيمه_الاساسية" in df_dump.columns and not pd.isna(row["القيمه_الاساسية"]) else 0
-                    val_total = row["القيمه_الكليه"] if "القيمه_الكليه" in df_dump.columns and not pd.isna(row["القيمه_الكليه"]) else 0
-                    
-                    if "ADSL" in service_name.upper() and base_provider == "Bee Payment":
-                        amount = val_basic
-                    else:
-                        amount = val_total
+            row_dict = {
+                "operation number": row.get("رقم_العملية"),
+                "Extra Info": row.get("معلومات_اضافيه"),
+                "TRX date": row.get("تاريخ_الانشاء"),
+                "Amount": amount,
+                "service name": service_name,
+                "Provider": row.get("مزود_الخدمة"),
+                "Merchant Name": row.get("اسم_التاجر"),
+                "Status": "فاشلة" if row.get("حالة_العملية") in [4, "4"] else "ناجحة"
+            }
+            processed_data.append(row_dict)
 
-                    status_str = "فاشلة" if status_val in ["4", "4.0"] else ("ناجحة" if status_val in ["1", "1.0"] else "")
-
-                    if extraction_type == "Complaint":
-                        op_num_formatted = f"Damen{op_num}" if op_num else ""
-                        row_dict = {
-                            "Extra Info": extra_info,
-                            "provider operation numb": ref_num,
-                            "TRX date": trx_date,
-                            "Amount": amount,
-                            "operation number": op_num_formatted,
-                            "service name": service_name,
-                            "Merchant Code": merchant_code,
-                            "Merchant Name": merchant_name,
-                            "Gov": gov_name,
-                            "Status": status_str
-                        }
-                    else:
-                        ref_reco = ref_num if ref_num and ref_num.lower() != "empty" else extra_info
-                        row_dict = {
-                            "operation number": op_num,
-                            "Extra Info": ref_reco,
-                            "TRX date": trx_date,
-                            "Amount": amount,
-                            "service name": service_name,
-                            "Provider": provider_name,
-                            "Merchant Name": merchant_name,
-                            "Status": status_str
-                        }
-                    
-                    processed_data.append(row_dict)
-
-                result_df = pd.DataFrame(processed_data)
-                
-                st.success(f"✅ تم معالجة واستخراج بيانات الـ {extraction_type} بنجاح!")
-                st.dataframe(result_df, use_container_width=True)
-
-                output = io.BytesIO()
-                with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    result_df.to_excel(writer, index=False, sheet_name=extraction_type)
-                processed_excel = output.getvalue()
-
-                # تقسيم الشاشة لأزرار التحميل والنسخ
-                col_dl, col_cp = st.columns([1, 1])
-                
-                with col_dl:
-                    st.download_button(
-                        label=f"📥 تحميل ملف الـ {extraction_type} جاهز",
-                        data=processed_excel,
-                        file_name=f"{extraction_type}_Report.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-
-                with col_cp:
-                    cols_to_copy = [c for c in result_df.columns if c != "Status"]
-                    text_to_copy = result_df[cols_to_copy].to_csv(sep='\t', index=False, header=False)
-                    st.code(text_to_copy, language="text")
-                    st.caption("👆 يمكنك الضغط على زر النسخ في أعلى المربع أعلاه لنسخ البيانات لحد قبل الـ Status مباشرة.")
-
-        except Exception as e:
-            st.error(f"حدث خطأ أثناء قراءة الملف: {e}")
+        result_df = pd.DataFrame(processed_data)
+        st.dataframe(result_df)
+        
+        # Download & Copy
+        output = io.BytesIO()
+        result_df.to_excel(output, index=False)
+        st.download_button("📥 تحميل التقرير", output.getvalue(), f"{extraction_type}_Report.xlsx")
+        
+        # Copy logic (excluding Status)
+        cols_to_copy = [c for c in result_df.columns if c != "Status"]
+        st.code(result_df[cols_to_copy].to_csv(sep='\t', index=False, header=False), language="text")
