@@ -16,10 +16,7 @@ st.set_page_config(
 # Custom CSS - ثيم فاتح بالكامل ونظيف جداً
 st.markdown("""
     <style>
-        /* خلفية التطبيق العامة فاتحة وناعمة */
         .stApp { background-color: #F8FAFC; color: #1E293B; }
-        
-        /* السايد بار باللون الأزرق الاحترافي مع خط برتقالي مميز */
         [data-testid="stSidebar"] { 
             background-color: #0A192F; 
             border-right: 4px solid #FF7700;
@@ -27,20 +24,12 @@ st.markdown("""
             text-align: center; 
         }
         [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] div { color: #FFFFFF !important; font-weight: 600 !important; }
-        
-        /* الأزرار */
         .stButton>button { width: 100%; border-radius: 8px; font-weight: bold; height: 48px; background-color: #FF7700 !important; color: white !important; border: none; }
         .stButton>button:hover { background-color: #e56b00 !important; }
-        
-        /* البطاقات والمقاييس بلون أبيض ناصع مع حدود خفيفة */
         div.stMetric { background-color: #FFFFFF; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; border-right: 6px solid #FF7700; direction: rtl; text-align: right; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
         div.stMetric label { color: #64748B !important; font-weight: 600 !important; }
         div.stMetric div[data-testid="stMetricValue"] { color: #0F172A !important; font-weight: bold !important; }
-        
-        /* العناوين والخطوط */
         h1, h2, h3, label { color: #0F172A !important; direction: rtl; text-align: right; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        
-        /* الصورة الدائرية في السايدبار */
         .circle-img { 
             border-radius: 50%; 
             border: 3px solid #FF7700; 
@@ -50,12 +39,8 @@ st.markdown("""
             display: block; 
             margin: 10px auto; 
         }
-        
-        /* حقول الإدخال والنصوص */
         .stTextArea textarea, .stTextInput input { background-color: #FFFFFF !important; color: #0F172A !important; border: 1px solid #CBD5E1 !important; border-radius: 8px !important; }
         .stTextArea textarea:focus, .stTextInput input:focus { border-color: #FF7700 !important; box-shadow: 0 0 0 2px rgba(255,119,0,0.1); }
-        
-        /* رموز المدفوعات */
         .payment-icons { font-size: 45px; text-align: center; margin-bottom: 10px; letter-spacing: 10px; }
     </style>
 """, unsafe_allow_html=True)
@@ -74,7 +59,7 @@ USERS = {
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "username" not in st.session_state: st.session_state.username = ""
 
-# Login Page - بدون صورة وبأيقونات المدفوعات والشكل الفاتح
+# Login Page
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
@@ -156,15 +141,27 @@ elif selected_tool == "⚡ Dispute Extractor":
         processed_data = []
         for _, row in df_dump.iterrows():
             service_name = str(row.get("اسم_الخدمة", "")).strip()
-            amount = row.get("القيمه_الاساسية", 0) if "ADSL" in service_name.upper() and row.get("مزود_الخدمة_الاساسي") == "Bee Payment" else row.get("القيمه_كليه", 0)
+            provider_val = str(row.get("مزود_الخدمة", "")).strip()
+            base_provider = str(row.get("مزود_الخدمة_الاساسي", "")).strip()
             
+            # منطق اختيار القيمة الصحيحة لعدم ظهور القيمة بـ 0 والتأكد من شروط Bee Payment
+            amt = 0
+            for col_candidate in ["القيمه_كليه", "القيمه_الاساسية", "المبلغ", "القيمة"]:
+                if col_candidate in row and pd.notna(row[col_candidate]) and float(row[col_candidate]) != 0:
+                    amt = row[col_candidate]
+                    break
+            
+            if "ADSL" in service_name.upper() and base_provider == "Bee Payment":
+                if "القيمه_الاساسية" in row and pd.notna(row["القيمه_الاساسية"]):
+                    amt = row["القيمه_الاساسية"]
+
             processed_data.append({
                 "operation number": str(row.get("رقم_العملية", "")),
                 "Extra Info": str(row.get("معلومات_اضافيه", "")),
                 "TRX date": str(row.get("تاريخ_الانشاء", "")),
-                "Amount": str(amount),
+                "Amount": str(amt),
                 "service name": service_name,
-                "Provider": str(row.get("مزود_الخدمة", "")),
+                "Provider": provider_val,
                 "Merchant Name": str(row.get("اسم_التاجر", "")),
                 "Status": "فاشلة" if str(row.get("حالة_العملية")) in ["4", "4.0"] else "ناجحة"
             })
