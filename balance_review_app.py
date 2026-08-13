@@ -13,22 +13,34 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS - ثيم داكن مستوحى من ضامن مع خلفية راقية وخطوط واضحة
+# Custom CSS - ثيم فاتح احترافي (UX راقي جداً وخطوط واضحة)
 st.markdown("""
     <style>
-        .stApp { background-color: #0B132B; color: #FFFFFF; }
+        /* خلفية التطبيق العامة فاتحة ومريحة */
+        .stApp { background-color: #F8FAFC; color: #1E293B; }
+        
+        /* السايد بار بلون أزرق ضامن الفخم مع خط فاصل برتقالي */
         [data-testid="stSidebar"] { 
-            background-color: #001D3D; 
-            border-right: 3px solid #FF7700;
+            background-color: #0A192F; 
+            border-right: 4px solid #FF7700;
             direction: ltr; 
             text-align: center; 
         }
-        [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] div { color: #ffffff !important; font-weight: 600 !important; }
-        .stButton>button { width: 100%; border-radius: 8px; font-weight: bold; height: 48px; background-color: #FF7700 !important; color: white !important; border: none; }
+        [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] div { color: #FFFFFF !important; font-weight: 600 !important; }
+        
+        /* الأزرار بتصميم عصري */
+        .stButton>button { width: 100%; border-radius: 8px; font-weight: bold; height: 48px; background-color: #FF7700 !important; color: white !important; border: none; box-shadow: 0 4px 6px -1px rgba(255, 119, 0, 0.2); }
         .stButton>button:hover { background-color: #e56b00 !important; }
-        div.stMetric { background-color: #1C2541; padding: 20px; border-radius: 12px; border-left: 6px solid #FF7700; direction: rtl; text-align: right; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }
-        div.stMetric label, div.stMetric div[data-testid="stMetricValue"] { color: #FFFFFF !important; }
-        h1, h2, h3, label { color: #E0FBFC !important; direction: rtl; text-align: right; }
+        
+        /* الـ Cards والمقاييس بتصميم ناعم */
+        div.stMetric { background-color: #FFFFFF; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; border-right: 6px solid #FF7700; direction: rtl; text-align: right; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        div.stMetric label { color: #64748B !important; font-weight: 600 !important; }
+        div.stMetric div[data-testid="stMetricValue"] { color: #0F172A !important; font-weight: bold !important; }
+        
+        /* العناوين والخطوط */
+        h1, h2, h3, label { color: #0F172A !important; direction: rtl; text-align: right; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        
+        /* الصورة الدائرية في السايدبار */
         .circle-img { 
             border-radius: 50%; 
             border: 3px solid #FF7700; 
@@ -38,7 +50,10 @@ st.markdown("""
             display: block; 
             margin: 10px auto; 
         }
-        .stTextArea textarea, .stTextInput input { background-color: #1C2541 !important; color: #FFFFFF !important; border: 1px solid #FF7700 !important; }
+        
+        /* حقول الإدخال والنصوص */
+        .stTextArea textarea, .stTextInput input { background-color: #FFFFFF !important; color: #0F172A !important; border: 1px solid #CBD5E1 !important; border-radius: 8px !important; }
+        .stTextArea textarea:focus, .stTextInput input:focus { border-color: #FF7700 !important; box-shadow: 0 0 0 2px rgba(255,119,0,0.1); }
     </style>
 """, unsafe_allow_html=True)
 
@@ -56,18 +71,19 @@ USERS = {
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "username" not in st.session_state: st.session_state.username = ""
 
-# Login Page - لوجو كبير في المنتصف
+# Login Page - لوجو مستطيل وبارز في المنتصف
 if not st.session_state.logged_in:
-    col1, col2, col3 = st.columns([1, 1.5, 1])
+    col1, col2, col3 = st.columns([1, 1.2, 1])
     with col2:
-        st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 50px;'></div>", unsafe_allow_html=True)
         if os.path.exists("damen_logo.png"):
-            # عرض اللوجو بحجم كبير ومسنتر
-            st.image("damen_logo.png", width=250)
-        st.markdown("<h1 style='text-align: center; color: #FF7700; margin-top: 15px;'>Dispute App</h1>", unsafe_allow_html=True)
+            # عرض اللوجو مستطيل وبحجم مناسب جداً
+            st.image("damen_logo.png", width=320)
+        st.markdown("<h2 style='text-align: center; color: #0F172A; margin-top: 15px;'>Dispute App Portal</h2>", unsafe_allow_html=True)
         
         login_user = st.text_input("البريد الإلكتروني")
         login_pass = st.text_input("كلمة المرور", type="password")
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
         if st.button("دخول"):
             if login_user in USERS and USERS[login_user]["password"] == login_pass:
                 st.session_state.logged_in = True
@@ -97,9 +113,11 @@ with st.sidebar:
 # Tools Logic
 if selected_tool == "📊 Balance Review":
     st.title("📊 مراجعة أرصدة التجار")
+    st.markdown("<p style='color: #64748B; margin-bottom: 20px;'>قم بإلصاق تقرير الحسابات لتتم مراجعة المطابقة والفروق تلقائياً.</p>", unsafe_allow_html=True)
+    
     col_input, col_results = st.columns([1, 1], gap="large")
     with col_input:
-        input_text = st.text_area("ألصق نص التقرير هنا:", height=300)
+        input_text = st.text_area("ألصق نص التقرير هنا:", height=320)
         calculate_btn = st.button("حساب ومراجعة الرصيد الآن", type="primary")
     with col_results:
         if calculate_btn:
@@ -124,6 +142,7 @@ if selected_tool == "📊 Balance Review":
             st.metric("الرصيد الختامي", f"{closing:,.2f}")
             st.metric("الفرق النهائي", f"{variance:,.2f}")
 
+            st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
             if variance == 0: st.success("✅ المطابقة صحيحة تماماً!")
             elif abs(variance) > 0 and overdraft > 0 and abs(variance) == abs(overdraft):
                 st.success(f"✅ مفيش فرق حقيقي! بسبب سحب على المكشوف ({overdraft:,.2f}).")
@@ -131,6 +150,8 @@ if selected_tool == "📊 Balance Review":
 
 elif selected_tool == "⚡ Dispute Extractor":
     st.title("⚡ Dispute Extractor")
+    st.markdown("<p style='color: #64748B; margin-bottom: 20px;'>استخراج وتنسيق ملفات العمليات للشكاوى والمطابقات بسهولة.</p>", unsafe_allow_html=True)
+    
     uploaded_file = st.file_uploader("اختر ملف الـ Excel:", type=["xlsx", "xls"])
     extraction_type = st.radio("النوع:", ["Complaint", "Reconciliation"], horizontal=True)
 
