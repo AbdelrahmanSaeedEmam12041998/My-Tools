@@ -13,12 +13,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS - الثيم الأصلي الراقي والواضح
+# Custom CSS - ثيم متوازن ومريح (أزرق متوسط مريح للعين)
 st.markdown("""
     <style>
-        .stApp { background-color: #0B132B; color: #FFFFFF; }
+        .stApp { background-color: #111E38; color: #FFFFFF; }
         [data-testid="stSidebar"] { 
-            background-color: #001D3D; 
+            background-color: #1B2A4A; 
             border-right: 3px solid #FF7700;
             direction: ltr; 
             text-align: center; 
@@ -26,7 +26,7 @@ st.markdown("""
         [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] div { color: #ffffff !important; font-weight: 600 !important; }
         .stButton>button { width: 100%; border-radius: 8px; font-weight: bold; height: 48px; background-color: #FF7700 !important; color: white !important; border: none; }
         .stButton>button:hover { background-color: #e56b00 !important; }
-        div.stMetric { background-color: #1C2541; padding: 20px; border-radius: 12px; border-left: 6px solid #FF7700; direction: rtl; text-align: right; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }
+        div.stMetric { background-color: #1E3157; padding: 20px; border-radius: 12px; border-left: 6px solid #FF7700; direction: rtl; text-align: right; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }
         div.stMetric label, div.stMetric div[data-testid="stMetricValue"] { color: #FFFFFF !important; }
         h1, h2, h3, label { color: #E0FBFC !important; direction: rtl; text-align: right; }
         .circle-img { 
@@ -38,7 +38,7 @@ st.markdown("""
             display: block; 
             margin: 10px auto; 
         }
-        .stTextArea textarea, .stTextInput input { background-color: #1C2541 !important; color: #FFFFFF !important; border: 1px solid #FF7700 !important; }
+        .stTextArea textarea, .stTextInput input { background-color: #1E3157 !important; color: #FFFFFF !important; border: 1px solid #FF7700 !important; }
         .payment-icons { font-size: 45px; text-align: center; margin-bottom: 10px; letter-spacing: 10px; }
     </style>
 """, unsafe_allow_html=True)
@@ -57,7 +57,7 @@ USERS = {
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "username" not in st.session_state: st.session_state.username = ""
 
-# Login Page - بدون صورة وصممنا رموز المدفوعات برا
+# Login Page
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
