@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 import re
-from PIL import Image
 import os
 import io
+import base64
 
 # Page Configuration
 st.set_page_config(
@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS - استايل ضامن وتنسيق العناصر
+# Custom CSS
 st.markdown("""
     <style>
         .main { background-color: #f8fafc; }
@@ -40,13 +40,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ==================== USERS DATABASE ====================
+# Users
 USERS = {
     "a.mahmoud@Damen.com.eg": {"password": "+#8bD;,Z8zf0dY4", "name": "أحمد محمود", "img": "a.mahmoud@Damen.com.eg.png"},
     "a.elkhodary@Damen.com.eg": {"password": "Nw1la9.B)|N[7WK", "name": "أحمد الخضري", "img": "a.elkhodary@Damen.com.eg.png"},
     "h.shouman@Damen.com.eg": {"password": "0ud0L7V'`:5PhKM", "name": "حسام شوتمان", "img": "h.shouman@Damen.com.eg.png"},
     "ahmed.kamal@Damen.com.eg": {"password": "7[s-2l6L@7YE%j7", "name": "أحمد كمال", "img": "ahmed.kamal@Damen.com.eg.png"},
-    "barsom.naeem@Damen.com.eg": {"password": "Xhu\\25A0x6(#~C'", "name": "برسوم نعيم", "img": "barsom.naeem@Damen.com.eg.png"},
+    "barsom.naeem@Damen.com.eg": {"password": "Xhu\x80x6(#~C'", "name": "برسوم نعيم", "img": "barsom.naeem@Damen.com.eg.png"},
     "abdelrahman.saeed@Damen.com.eg": {"password": "<E;;W3ky39h=du/", "name": "عبد الرحمن سعيد", "img": "abdelrahman.saeed@Damen.com.eg.png"},
     "mohamed.yahia@Damen.com.eg": {"password": "%'Pnw[15T[8\"1", "name": "محمد يحيى", "img": "mohamed.yahia@Damen.com.eg.png"}
 }
@@ -61,8 +61,6 @@ if not st.session_state.logged_in:
         if os.path.exists("damen_logo.png"):
             st.image("damen_logo.png", width=140)
         st.markdown("<h1 style='text-align: center; color: #F97316;'>Dispute App</h1>", unsafe_allow_html=True)
-        st.markdown("<h3 style='text-align: center; font-size: 18px;'>تسجيل الدخول</h3>", unsafe_allow_html=True)
-        
         login_user = st.text_input("البريد الإلكتروني")
         login_pass = st.text_input("كلمة المرور", type="password")
         if st.button("دخول"):
@@ -76,18 +74,12 @@ if not st.session_state.logged_in:
 # Sidebar
 current_user = USERS[st.session_state.username]
 with st.sidebar:
-    # عرض الصورة دائرية وفي المنتصف
     img_path = current_user["img"]
     if os.path.exists(img_path):
         with open(img_path, "rb") as img_file:
-            img_bytes = img_file.read()
-        import base64
-        encoded_img = base64.b64encode(img_bytes).decode()
+            encoded_img = base64.b64encode(img_file.read()).decode()
         st.markdown(f'<img src="data:image/png;base64,{encoded_img}" class="circle-img">', unsafe_allow_html=True)
-    else:
-        if os.path.exists("damen_logo.png"):
-            st.image("damen_logo.png", width=80)
-            
+    
     st.markdown(f"<p style='text-align: center; color: #ffffff; font-size: 16px; margin-top: 5px;'>{current_user['name']}</p>", unsafe_allow_html=True)
     
     if st.button("تسجيل الخروج"):
@@ -95,7 +87,7 @@ with st.sidebar:
         st.rerun()
         
     st.markdown("---")
-    selected_tool = st.radio("الأدوات:", ["📊 Balance Review", "🔍 Etisalat Checker", "⚡ Dispute Extractor"], label_visibility="collapsed")
+    selected_tool = st.radio("الأدوات:", ["📊 Balance Review", "⚡ Dispute Extractor"], label_visibility="collapsed")
 
 # Tools Logic
 if selected_tool == "📊 Balance Review":
@@ -109,9 +101,8 @@ if selected_tool == "📊 Balance Review":
             def parse_report_data(text):
                 mapping = {"الرصيد الافتتاحي": "C5", "اضافة رصيد": "C6", "استرجاع رصيد": "C7", "استرحاع رصيد": "C7", 
                            "اضافة عمولات": "C8", "تصحيح بالاضافة": "C9", "تصحيح بالخصم": "C10", "مدفوعات العملاء": "C11",
-                           "الرصيد الختامي": "C12", "مبالغ تحت التسوية": "C13", "مدفوعات كارت الائتمان": "C14", 
-                           "اضافة جوائز": "C15", "غرامات عدم التحقيق": "C16", "مصاريف صيانة": "C17", 
-                           "ايداع اسمارت": "C18", "سحب علي المكشوف": "C19"}
+                           "الرصيد الختامي": "C12", "مبالغ تحت التسوية": "C13", "اضافة جوائز": "C15", 
+                           "مصاريف صيانة": "C17", "سحب علي المكشوف": "C19"}
                 results = {v: 0.0 for v in mapping.values()}
                 for arabic_label, key in mapping.items():
                     match = re.search(re.escape(str(arabic_label)) + r"\s*:\s*\n?\s*(-?[\d\.]+)", text)
@@ -128,12 +119,10 @@ if selected_tool == "📊 Balance Review":
             st.metric("الرصيد الختامي", f"{closing:,.2f}")
             st.metric("الفرق النهائي", f"{variance:,.2f}")
 
-            if variance == 0:
-                st.success("✅ المطابقة صحيحة تماماً!")
+            if variance == 0: st.success("✅ المطابقة صحيحة تماماً!")
             elif abs(variance) > 0 and overdraft > 0 and abs(variance) == abs(overdraft):
                 st.success(f"✅ مفيش فرق حقيقي! بسبب سحب على المكشوف ({overdraft:,.2f}).")
-            else:
-                st.warning("⚠️ توجد فروق تتطلب المراجعة.")
+            else: st.warning("⚠️ توجد فروق تتطلب المراجعة.")
 
 elif selected_tool == "⚡ Dispute Extractor":
     st.title("⚡ Dispute Extractor")
@@ -141,35 +130,27 @@ elif selected_tool == "⚡ Dispute Extractor":
     extraction_type = st.radio("النوع:", ["Complaint", "Reconciliation"], horizontal=True)
 
     if uploaded_file and st.button("بدء المعالجة", type="primary"):
-        df_dump = pd.read_excel(uploaded_file, sheet_name=0)
+        df_dump = pd.read_excel(uploaded_file)
         processed_data = []
         for _, row in df_dump.iterrows():
             service_name = str(row.get("اسم_الخدمة", "")).strip()
-            base_provider = str(row.get("مزود_الخدمة_الاساسي", "")).strip()
+            amount = row.get("القيمه_الاساسية", 0) if "ADSL" in service_name.upper() and row.get("مزود_الخدمة_الاساسي") == "Bee Payment" else row.get("القيمه_الكليه", 0)
             
-            if "ADSL" in service_name.upper() and base_provider == "Bee Payment":
-                amount = row.get("القيمه_الاساسية", 0)
-            else:
-                amount = row.get("القيمه_كليه", 0)
-
-            row_dict = {
-                "operation number": row.get("رقم_العملية"),
-                "Extra Info": row.get("معلومات_اضافيه"),
-                "TRX date": row.get("تاريخ_الانشاء"),
-                "Amount": amount,
+            processed_data.append({
+                "operation number": str(row.get("رقم_العملية", "")),
+                "Extra Info": str(row.get("معلومات_اضافيه", "")),
+                "TRX date": str(row.get("تاريخ_الانشاء", "")),
+                "Amount": str(amount),
                 "service name": service_name,
-                "Provider": row.get("مزود_الخدمة"),
-                "Merchant Name": row.get("اسم_التاجر"),
-                "Status": "فاشلة" if row.get("حالة_العملية") in [4, "4"] else "ناجحة"
-            }
-            processed_data.append(row_dict)
+                "Provider": str(row.get("مزود_الخدمة", "")),
+                "Merchant Name": str(row.get("اسم_التاجر", "")),
+                "Status": "فاشلة" if str(row.get("حالة_العملية")) in ["4", "4.0"] else "ناجحة"
+            })
 
         result_df = pd.DataFrame(processed_data)
-        st.dataframe(result_df)
+        st.dataframe(result_df, use_container_width=True)
         
         output = io.BytesIO()
         result_df.to_excel(output, index=False)
         st.download_button("📥 تحميل التقرير", output.getvalue(), f"{extraction_type}_Report.xlsx")
-        
-        cols_to_copy = [c for c in result_df.columns if c != "Status"]
-        st.code(result_df[cols_to_copy].to_csv(sep='\t', index=False, header=False), language="text")
+        st.code(result_df.drop(columns=["Status"]).to_csv(sep='\t', index=False, header=False), language="text")
