@@ -6,26 +6,21 @@ import os
 import io
 
 # Page Configuration
-st.set_page_config(
-    page_title="Dispute Unit Tools",
-    page_icon="damen_logo.png",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Dispute Unit Tools", page_icon="damen_logo.png", layout="wide", initial_sidebar_state="expanded")
 
 # Custom CSS
 st.markdown("""
     <style>
         .main { background-color: #f8fafc; }
-        [data-testid="stSidebar"] { background-color: #0f172a; direction: ltr; text-align: center; }
+        [data-testid="stSidebar"] { background-color: #0f172a; }
         [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] div { color: #ffffff !important; font-weight: 600 !important; }
         .stButton>button { width: 100%; border-radius: 8px; font-weight: bold; height: 48px; background-color: #f97316; color: white; border: none; }
-        div.stMetric { background-color: #ffffff; padding: 20px; border-radius: 12px; border-left: 6px solid #f97316; direction: rtl; text-align: right; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        h1, h2, h3 { color: #1e293b; direction: rtl; text-align: right; }
+        div.stMetric { background-color: #ffffff; padding: 20px; border-radius: 12px; border-left: 6px solid #f97316; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        h1, h2, h3 { color: #1e293b; text-align: right; }
     </style>
 """, unsafe_allow_html=True)
 
-# ==================== USERS DATABASE ====================
+# Users
 USERS = {
     "a.mahmoud@Damen.com.eg": {"password": "+#8bD;,Z8zf0dY4", "name": "أحمد محمود", "img": "a.mahmoud@Damen.com.eg.png"},
     "a.elkhodary@Damen.com.eg": {"password": "Nw1la9.B)|N[7WK", "name": "أحمد الخضري", "img": "a.elkhodary@Damen.com.eg.png"},
@@ -53,90 +48,81 @@ if not st.session_state.logged_in:
             else: st.error("بيانات الدخول غير صحيحة")
     st.stop()
 
+# Sidebar
 current_user = USERS[st.session_state.username]
 with st.sidebar:
-    st.markdown(f"<p style='text-align: center; color: #38bdf8; font-size: 16px; margin-top: 10px;'>{current_user['name']}</p>", unsafe_allow_html=True)
+    img_to_show = current_user["img"] if os.path.exists(current_user["img"]) else "damen_logo.png"
+    st.image(Image.open(img_to_show), use_container_width=True)
+    st.markdown(f"<p style='text-align: center; color: #38bdf8; font-size: 16px;'>{current_user['name']}</p>", unsafe_allow_html=True)
     if st.button("تسجيل الخروج"):
         st.session_state.logged_in = False
         st.rerun()
     st.markdown("---")
     selected_tool = st.radio("الأدوات:", ["📊 Balance Review", "🔍 Etisalat Checker", "⚡ Dispute Extractor"], label_visibility="collapsed")
 
+# Tools
 if selected_tool == "📊 Balance Review":
     st.title("📊 مراجعة أرصدة التجار")
     col_input, col_results = st.columns([1, 1], gap="large")
     with col_input:
-        input_text = st.text_area("ألصق نص التقرير هنا:", height=300)
-        calculate_btn = st.button("حساب ومراجعة الرصيد الآن", type="primary")
+        input_text = st.text_area("ألصق نص التقرير:", height=300)
+        calculate_btn = st.button("حساب ومراجعة", type="primary")
     with col_results:
         if calculate_btn:
-            def parse_report_data(text):
-                mapping = {"الرصيد الافتتاحي": "C5", "اضافة رصيد": "C6", "استرجاع رصيد": "C7", "استرحاع رصيد": "C7", 
-                           "اضافة عمولات": "C8", "تصحيح بالاضافة": "C9", "تصحيح بالخصم": "C10", "مدفوعات العملاء": "C11",
-                           "الرصيد الختامي": "C12", "مبالغ تحت التسوية": "C13", "مدفوعات كارت الائتمان": "C14", 
-                           "اضافة جوائز": "C15", "غرامات عدم التحقيق": "C16", "مصاريف صيانة": "C17", 
-                           "ايداع اسمارت": "C18", "سحب علي المكشوف": "C19"}
-                results = {v: 0.0 for v in mapping.values()}
-                for arabic_label, key in mapping.items():
-                    match = re.search(re.escape(str(arabic_label)) + r"\s*:\s*\n?\s*(-?[\d\.]+)", text)
-                    if match: results[key] = float(match.group(1))
-                return results
-
-            data = parse_report_data(input_text)
-            expected = round(data['C5'] + data['C6'] + data['C8'] + data['C9'] + data['C7'] + data['C15'] + data['C13'] - data['C10'] - data['C11'] + data['C19'] + data['C17'], 2)
-            closing = round(data['C12'], 2)
+            mapping = {"الرصيد الافتتاحي": "C5", "اضافة رصيد": "C6", "استرجاع رصيد": "C7", "اضافة عمولات": "C8", 
+                       "تصحيح بالاضافة": "C9", "تصحيح بالخصم": "C10", "مدفوعات العملاء": "C11", "الرصيد الختامي": "C12",
+                       "مبالغ تحت التسوية": "C13", "اضافة جوائز": "C15", "مصاريف صيانة": "C17", "سحب علي المكشوف": "C19"}
+            results = {k: 0.0 for k in mapping.values()}
+            raw_data = {}
+            for label, key in mapping.items():
+                match = re.search(re.escape(label) + r"\s*:\s*\n?\s*(-?[\d\.]+)", input_text)
+                if match: 
+                    results[key] = float(match.group(1))
+                    raw_data[label] = results[key]
+            
+            expected = round(results['C5'] + results['C6'] + results['C8'] + results['C9'] + results['C7'] + results['C15'] + results['C13'] - results['C10'] - results['C11'] + results['C19'] + results['C17'], 2)
+            closing = round(results['C12'], 2)
             variance = round(closing - expected, 2)
-            overdraft = round(data['C19'], 2)
-
+            
             st.metric("الرصيد المتوقع", f"{expected:,.2f}")
             st.metric("الرصيد الختامي", f"{closing:,.2f}")
             st.metric("الفرق النهائي", f"{variance:,.2f}")
-
-            if variance == 0:
-                st.success("✅ المطابقة صحيحة تماماً!")
-            elif abs(variance) > 0 and overdraft > 0 and abs(variance) == abs(overdraft):
-                st.success(f"✅ مفيش فرق حقيقي! بسبب سحب على المكشوف ({overdraft:,.2f}).")
-            else:
-                st.warning("⚠️ توجد فروق تتطلب المراجعة.")
+            
+            if variance == 0: st.success("✅ المطابقة صحيحة تماماً!")
+            elif abs(variance) == abs(round(results['C19'], 2)) and results['C19'] > 0: st.success(f"✅ الفرق بسبب سحب على المكشوف ({results['C19']:,.2f}).")
+            else: st.warning("⚠️ توجد فروق تتطلب المراجعة.")
+            
+            with st.expander("🔍 عرض تفاصيل بنود التقرير المستخرجة"):
+                for label, val in raw_data.items(): st.text(f"• {label} : {val}")
 
 elif selected_tool == "⚡ Dispute Extractor":
     st.title("⚡ Dispute Extractor")
     uploaded_file = st.file_uploader("اختر ملف الـ Excel:", type=["xlsx", "xls"])
     extraction_type = st.radio("النوع:", ["Complaint", "Reconciliation"], horizontal=True)
-
-    if uploaded_file and st.button("بدء المعالجة", type="primary"):
-        df_dump = pd.read_excel(uploaded_file, sheet_name=0)
-        processed_data = []
-        for _, row in df_dump.iterrows():
-            service_name = str(row.get("اسم_الخدمة", "")).strip()
-            base_provider = str(row.get("مزود_الخدمة_الاساسي", "")).strip()
+    if uploaded_file and st.button("معالجة", type="primary"):
+        df = pd.read_excel(uploaded_file)
+        processed = []
+        for _, row in df.iterrows():
+            s_name = str(row.get("اسم_الخدمة", "")).upper()
+            base_p = str(row.get("مزود_الخدمة_الاساسي", ""))
+            amt = row.get("القيمه_الاساسية", 0) if "ADSL" in s_name and base_p == "Bee Payment" else row.get("القيمه_الكليه", 0)
             
-            # Logic for amount
-            if "ADSL" in service_name.upper() and base_provider == "Bee Payment":
-                amount = row.get("القيمه_الاساسية", 0)
-            else:
-                amount = row.get("القيمه_الكليه", 0)
-
-            row_dict = {
+            row_data = {
                 "operation number": row.get("رقم_العملية"),
                 "Extra Info": row.get("معلومات_اضافيه"),
                 "TRX date": row.get("تاريخ_الانشاء"),
-                "Amount": amount,
-                "service name": service_name,
+                "Amount": amt,
+                "service name": row.get("اسم_الخدمة"),
                 "Provider": row.get("مزود_الخدمة"),
                 "Merchant Name": row.get("اسم_التاجر"),
-                "Status": "فاشلة" if row.get("حالة_العملية") in [4, "4"] else "ناجحة"
+                "Status": "فاشلة" if str(row.get("حالة_العملية")) in ["4", "4.0"] else "ناجحة"
             }
-            processed_data.append(row_dict)
-
-        result_df = pd.DataFrame(processed_data)
-        st.dataframe(result_df)
+            processed.append(row_data)
         
-        # Download & Copy
+        res_df = pd.DataFrame(processed)
+        st.dataframe(res_df)
+        
         output = io.BytesIO()
-        result_df.to_excel(output, index=False)
+        res_df.to_excel(output, index=False)
         st.download_button("📥 تحميل التقرير", output.getvalue(), f"{extraction_type}_Report.xlsx")
-        
-        # Copy logic (excluding Status)
-        cols_to_copy = [c for c in result_df.columns if c != "Status"]
-        st.code(result_df[cols_to_copy].to_csv(sep='\t', index=False, header=False), language="text")
+        st.code(res_df[[c for c in res_df.columns if c != "Status"]].to_csv(sep='\t', index=False, header=False), language="text")
