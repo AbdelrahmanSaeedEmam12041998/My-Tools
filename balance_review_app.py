@@ -13,30 +13,32 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS - ثيم داكن مستوحى من ضامن مع خلفية راقية وخطوط واضحة
 st.markdown("""
     <style>
-        .main { background-color: #f8fafc; }
+        .stApp { background-color: #0B132B; color: #FFFFFF; }
         [data-testid="stSidebar"] { 
-            background-color: #00205B; 
-            border-right: 3px solid #F97316;
+            background-color: #001D3D; 
+            border-right: 3px solid #FF7700;
             direction: ltr; 
             text-align: center; 
         }
         [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] div { color: #ffffff !important; font-weight: 600 !important; }
-        .stButton>button { width: 100%; border-radius: 8px; font-weight: bold; height: 48px; background-color: #F97316 !important; color: white !important; border: none; }
-        .stButton>button:hover { background-color: #ea580c !important; }
-        div.stMetric { background-color: #ffffff; padding: 20px; border-radius: 12px; border-left: 6px solid #F97316; direction: rtl; text-align: right; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        h1, h2, h3 { color: #00205B; direction: rtl; text-align: right; }
+        .stButton>button { width: 100%; border-radius: 8px; font-weight: bold; height: 48px; background-color: #FF7700 !important; color: white !important; border: none; }
+        .stButton>button:hover { background-color: #e56b00 !important; }
+        div.stMetric { background-color: #1C2541; padding: 20px; border-radius: 12px; border-left: 6px solid #FF7700; direction: rtl; text-align: right; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }
+        div.stMetric label, div.stMetric div[data-testid="stMetricValue"] { color: #FFFFFF !important; }
+        h1, h2, h3, label { color: #E0FBFC !important; direction: rtl; text-align: right; }
         .circle-img { 
             border-radius: 50%; 
-            border: 3px solid #F97316; 
+            border: 3px solid #FF7700; 
             width: 90px; 
             height: 90px; 
             object-fit: cover; 
             display: block; 
             margin: 10px auto; 
         }
+        .stTextArea textarea, .stTextInput input { background-color: #1C2541 !important; color: #FFFFFF !important; border: 1px solid #FF7700 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -46,7 +48,7 @@ USERS = {
     "a.elkhodary@Damen.com.eg": {"password": "Nw1la9.B)|N[7WK", "name": "أحمد الخضري", "img": "a.elkhodary@Damen.com.eg.png"},
     "h.shouman@Damen.com.eg": {"password": "0ud0L7V'`:5PhKM", "name": "حسام شوتمان", "img": "h.shouman@Damen.com.eg.png"},
     "ahmed.kamal@Damen.com.eg": {"password": "7[s-2l6L@7YE%j7", "name": "أحمد كمال", "img": "ahmed.kamal@Damen.com.eg.png"},
-    "barsom.naeem@Damen.com.eg": {"password": "Xhu\x80x6(#~C'", "name": "برسوم نعيم", "img": "barsom.naeem@Damen.com.eg.png"},
+    "barsom.naeem@Damen.com.eg": {"password": "Xhu\\x80x6(#~C'", "name": "برسوم نعيم", "img": "barsom.naeem@Damen.com.eg.png"},
     "abdelrahman.saeed@Damen.com.eg": {"password": "<E;;W3ky39h=du/", "name": "عبد الرحمن سعيد", "img": "abdelrahman.saeed@Damen.com.eg.png"},
     "mohamed.yahia@Damen.com.eg": {"password": "%'Pnw[15T[8\"1", "name": "محمد يحيى", "img": "mohamed.yahia@Damen.com.eg.png"}
 }
@@ -54,13 +56,16 @@ USERS = {
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "username" not in st.session_state: st.session_state.username = ""
 
-# Login Page
+# Login Page - لوجو كبير في المنتصف
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
+        st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
         if os.path.exists("damen_logo.png"):
-            st.image("damen_logo.png", width=140)
-        st.markdown("<h1 style='text-align: center; color: #F97316;'>Dispute App</h1>", unsafe_allow_html=True)
+            # عرض اللوجو بحجم كبير ومسنتر
+            st.image("damen_logo.png", width=250)
+        st.markdown("<h1 style='text-align: center; color: #FF7700; margin-top: 15px;'>Dispute App</h1>", unsafe_allow_html=True)
+        
         login_user = st.text_input("البريد الإلكتروني")
         login_pass = st.text_input("كلمة المرور", type="password")
         if st.button("دخول"):
@@ -134,7 +139,7 @@ elif selected_tool == "⚡ Dispute Extractor":
         processed_data = []
         for _, row in df_dump.iterrows():
             service_name = str(row.get("اسم_الخدمة", "")).strip()
-            amount = row.get("القيمه_الاساسية", 0) if "ADSL" in service_name.upper() and row.get("مزود_الخدمة_الاساسي") == "Bee Payment" else row.get("القيمه_الكليه", 0)
+            amount = row.get("القيمه_الاساسية", 0) if "ADSL" in service_name.upper() and row.get("مزود_الخدمة_الاساسي") == "Bee Payment" else row.get("القيمه_كليه", 0)
             
             processed_data.append({
                 "operation number": str(row.get("رقم_العملية", "")),
